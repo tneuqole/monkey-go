@@ -478,3 +478,74 @@ func TestIfElseExpression(t *testing.T) {
 	testIdentifier(t, alternative.Expression, "y")
 
 }
+
+func TestFunctionLiteral(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program doesn't have 1 statement, got=%d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("not an ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("not an FunctionLiteral, got=%T", exp)
+	}
+
+	if len(exp.Parameters) != 2 {
+		t.Errorf("want 2 parameters, got=%d", len(exp.Parameters))
+	}
+
+	testLiteralExpression(t, exp.Parameters[0], "x")
+	testLiteralExpression(t, exp.Parameters[1], "y")
+
+	if len(exp.Body.Statements) != 1 {
+		t.Errorf("body should have 1 stmt, got=%d", len(exp.Body.Statements))
+	}
+
+	body, ok := exp.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Body stmt not an ExpressionStatement, got=%T", exp.Body.Statements[0])
+	}
+
+	testInfixExpression(t, body.Expression, "x", "+", "y")
+}
+
+func TestFunctionParameter(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedParams []string
+	}{
+		{input: "fn() {};", expectedParams: []string{}},
+		{input: "fn(x) {};", expectedParams: []string{"x"}},
+		{input: "fn(x, y, z) {};", expectedParams: []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		stmt := program.Statements[0].(*ast.ExpressionStatement)
+
+		exp := stmt.Expression.(*ast.FunctionLiteral)
+
+		if len(exp.Parameters) != len(tt.expectedParams) {
+			t.Errorf("want %d parameters, got=%d", len(tt.expectedParams), len(exp.Parameters))
+		}
+
+		for i, ident := range tt.expectedParams {
+			testLiteralExpression(t, exp.Parameters[i], ident)
+		}
+	}
+}
