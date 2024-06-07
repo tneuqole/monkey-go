@@ -143,71 +143,65 @@ func testInfixExpression(t *testing.T, exp ast.Expression, left interface{}, ope
 }
 
 func TestLetStatements(t *testing.T) {
-	input := `
-	let x = 5;
-	let y = 10;
-	let foobar = 838383;
-	`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-	if program == nil {
-		t.Fatalf("program is nil")
-	}
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("program does not have 3 statements, got=%d", len(program.Statements))
-	}
-
 	tests := []struct {
-		expectedIdentifier string
+		input         string
+		expectedIdent string
+		expectedVal   interface{}
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"let x = 5;", "x", 5},
+		{"let y = 10;", "y", 10},
+		{"let foobar = y;", "foobar", "y"},
 	}
 
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if program == nil {
+			t.Fatalf("program is nil")
+		}
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program does not have 1 statements, got=%d", len(program.Statements))
+		}
+		stmt := program.Statements[0]
+		if !testLetStatement(t, stmt, tt.expectedIdent) {
 			return
 		}
+
+		val := stmt.(*ast.LetStatement).Value
+		testLiteralExpression(t, val, tt.expectedVal)
 	}
 }
 
 func TestReturnStatements(t *testing.T) {
-	input := `
-	return 5;
-	return 10;
-	return 993322;
-	`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-	if program == nil {
-		t.Fatalf("program is nil")
+	tests := []struct {
+		input       string
+		expectedVal interface{}
+	}{
+		{"return 5;", 5},
+		{"return 10;", 10},
+		{"return 993322;", 993322},
 	}
 
-	if len(program.Statements) != 3 {
-		t.Fatalf("program does not have 3 statements, got=%d", len(program.Statements))
-	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
 
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.ReturnStatement)
-		if !ok {
-			t.Errorf("s not a return statement, got=%T", returnStmt)
-			continue
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if program == nil {
+			t.Fatalf("program is nil")
 		}
 
-		if returnStmt.TokenLiteral() != "return" {
-			t.Errorf("token literal not 'return', got=%s", returnStmt.TokenLiteral())
+		if len(program.Statements) != 1 {
+			t.Fatalf("program does not have 1 statements, got=%d", len(program.Statements))
 		}
+
+		val := program.Statements[0].(*ast.ReturnStatement).ReturnValue
+		testLiteralExpression(t, val, tt.expectedVal)
 	}
 }
 
@@ -355,6 +349,9 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{" 2 / (5 + 5)", "(2 / (5 + 5))"},
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
+		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+		{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+		{"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"},
 	}
 
 	for _, tt := range tests {
@@ -548,4 +545,36 @@ func TestFunctionParameter(t *testing.T) {
 			testLiteralExpression(t, exp.Parameters[i], ident)
 		}
 	}
+}
+
+func TestCallExpression(t *testing.T) {
+	input := "add(1, 2 * 3, 4 + 5)"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program doesn't have 1 statement, got=%d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("not an ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatalf("not an CallExpression, got=%T", exp)
+	}
+
+	testIdentifier(t, exp.Function, "add")
+	if len(exp.Arguments) != 3 {
+		t.Errorf("want 3 arguments, got=%d", len(exp.Arguments))
+	}
+
+	testLiteralExpression(t, exp.Arguments[0], 1)
+	testInfixExpression(t, exp.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
 }
