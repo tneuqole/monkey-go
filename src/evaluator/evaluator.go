@@ -244,11 +244,15 @@ func isError(obj object.Object) bool {
 }
 
 func evalIdentifier(id *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(id.Value)
-	if !ok {
-		return newError("identifier not found: " + id.Value)
+	if val, ok := env.Get(id.Value); ok {
+		return val
 	}
-	return val
+
+	if builtin, ok := builtins[id.Value]; ok {
+		return builtin
+	}
+
+	return newError("identifier not found: " + id.Value)
 }
 
 func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
@@ -264,15 +268,18 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 	return result
 }
 
-func applyFunction(fn object.Object, args []object.Object) object.Object {
-	fnobj, ok := fn.(*object.Function)
-	if !ok {
+func applyFunction(fnobj object.Object, args []object.Object) object.Object {
+	switch fn := fnobj.(type) {
+	case *object.Function:
+		extendedEnv := extendFunctionEnv(fn, args)
+		evaluated := Eval(fn.Body, extendedEnv)
+		return unwrapReturnValue(evaluated)
+	case *object.Builtin:
+		return fn.Fn(args...)
+	default:
 		return newError("not a function: %s", fn.Type())
 	}
 
-	extendedEnv := extendFunctionEnv(fnobj, args)
-	evaluated := Eval(fnobj.Body, extendedEnv)
-	return unwrapReturnValue(evaluated)
 }
 
 func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
