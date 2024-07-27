@@ -1,4 +1,4 @@
-# go-interpreter
+# monkey-go
 
 https://interpreterbook.com/
 
