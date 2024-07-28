@@ -37,6 +37,7 @@ const (
 	LBRACKET = "["
 	RBRACKET = "]"
 
+	MACRO    = "MACRO"
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 	TRUE     = "TRUE"
@@ -48,6 +49,7 @@ const (
 )
 
 var keywords = map[string]TokenType{
+	"macro":  MACRO,
 	"fn":     FUNCTION,
 	"let":    LET,
 	"true":   TRUE,
