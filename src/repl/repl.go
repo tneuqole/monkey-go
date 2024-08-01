@@ -2,12 +2,14 @@ package repl
 
 import (
 	"bufio"
-	"evaluator"
+	"compiler"
+	// "evaluator"
 	"fmt"
 	"io"
 	"lexer"
-	"object"
+	// "object"
 	"parser"
+	"vm"
 )
 
 const PROMPT = ">> "
@@ -27,8 +29,8 @@ const MONKEY_FACE = `            __,__
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
-	macroEnv := object.NewEnvironment()
+	// env := object.NewEnvironment()
+	// macroEnv := object.NewEnvironment()
 	for {
 		fmt.Printf(PROMPT)
 		scanned := scanner.Scan()
@@ -46,13 +48,28 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluator.DefineMacros(program, macroEnv)
-		expanded := evaluator.ExpandMacros(program, macroEnv)
+		// evaluator.DefineMacros(program, macroEnv)
+		// expanded := evaluator.ExpandMacros(program, macroEnv)
+		//
+		// evaluated := evaluator.Eval(expanded, env)
+		// if evaluated != nil {
+		// 	io.WriteString(out, evaluated.Inspect()+"\n")
+		// }
 
-		evaluated := evaluator.Eval(expanded, env)
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect()+"\n")
+		c := compiler.New()
+		err := c.Compile(program)
+		if err != nil {
+			fmt.Fprintf(out, "compilation failed: %s", err)
 		}
+
+		machine := vm.New(c.Bytecode())
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(out, "vm failed: %s", err)
+		}
+
+		result := machine.StackTop()
+		io.WriteString(out, result.Inspect()+"\n")
 	}
 }
 
