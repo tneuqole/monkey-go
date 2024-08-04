@@ -68,7 +68,7 @@ func Start(in io.Reader, out io.Writer) {
 			fmt.Fprintf(out, "vm failed: %s", err)
 		}
 
-		result := machine.StackTop()
+		result := machine.LastPoppedStackElem()
 		io.WriteString(out, result.Inspect()+"\n")
 	}
 }
