@@ -9,6 +9,9 @@ import (
 
 const StackSize = 2048
 
+var True = &object.Boolean{Value: true}
+var False = &object.Boolean{Value: false}
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
@@ -42,23 +45,27 @@ func (vm *VM) LastPoppedStackElem() object.Object {
 
 func (vm *VM) Run() error {
 	for ip := 0; ip < len(vm.instructions); ip++ {
+		var err error
 		op := code.Opcode(vm.instructions[ip])
 		switch op {
 		case code.OpConstant:
 			constIndex := code.ReadUint16(vm.instructions[ip+1:])
 			ip += 2
-			err := vm.push(vm.constants[constIndex])
-			if err != nil {
-				return err
-			}
+			err = vm.push(vm.constants[constIndex])
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
-			err := vm.executeBinaryOperation(op)
-			if err != nil {
-				return err
-			}
+			err = vm.executeBinaryOperation(op)
+		case code.OpTrue:
+			err = vm.push(True)
+		case code.OpFalse:
+			err = vm.push(False)
 		case code.OpPop:
 			vm.pop()
 		}
+
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil
