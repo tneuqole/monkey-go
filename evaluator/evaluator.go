@@ -1,9 +1,10 @@
 package evaluator
 
 import (
-	"ast"
 	"fmt"
-	"object"
+
+	"github.com/tneuqole/monkey-go/ast"
+	"github.com/tneuqole/monkey-go/object"
 )
 
 var (

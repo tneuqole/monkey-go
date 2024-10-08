@@ -2,7 +2,8 @@ package ast
 
 import (
 	"testing"
-	"token"
+
+	"github.com/tneuqole/monkey-go/token"
 )
 
 func TestString(t *testing.T) {

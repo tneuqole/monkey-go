@@ -2,14 +2,15 @@ package repl
 
 import (
 	"bufio"
-	"compiler"
-	// "evaluator"
 	"fmt"
 	"io"
-	"lexer"
-	// "object"
-	"parser"
-	"vm"
+
+	"github.com/tneuqole/monkey-go/compiler"
+	// "github.com/tneuqole/monkey-go/evaluator"
+	"github.com/tneuqole/monkey-go/lexer"
+	// "github.com/tneuqole/monkey-go/object"
+	"github.com/tneuqole/monkey-go/parser"
+	"github.com/tneuqole/monkey-go/vm"
 )
 
 const PROMPT = ">> "

@@ -2,7 +2,8 @@ package evaluator
 
 import (
 	"fmt"
-	"object"
+
+	"github.com/tneuqole/monkey-go/object"
 )
 
 var builtins = map[string]*object.Builtin{

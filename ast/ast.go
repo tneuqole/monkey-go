@@ -3,7 +3,8 @@ package ast
 import (
 	"bytes"
 	"strings"
-	"token"
+
+	"github.com/tneuqole/monkey-go/token"
 )
 
 type Node interface {

@@ -1,11 +1,12 @@
 package evaluator
 
 import (
-	"ast"
-	"lexer"
-	"object"
-	"parser"
 	"testing"
+
+	"github.com/tneuqole/monkey-go/ast"
+	"github.com/tneuqole/monkey-go/lexer"
+	"github.com/tneuqole/monkey-go/object"
+	"github.com/tneuqole/monkey-go/parser"
 )
 
 func TestDefineMacros(t *testing.T) {

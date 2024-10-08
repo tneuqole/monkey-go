@@ -1,13 +1,14 @@
 package vm
 
 import (
-	"ast"
-	"compiler"
 	"fmt"
-	"lexer"
-	"object"
-	"parser"
 	"testing"
+
+	"github.com/tneuqole/monkey-go/ast"
+	"github.com/tneuqole/monkey-go/compiler"
+	"github.com/tneuqole/monkey-go/lexer"
+	"github.com/tneuqole/monkey-go/object"
+	"github.com/tneuqole/monkey-go/parser"
 )
 
 type vmTestCase struct {

@@ -1,10 +1,11 @@
 package parser
 
 import (
-	"ast"
 	"fmt"
-	"lexer"
 	"testing"
+
+	"github.com/tneuqole/monkey-go/ast"
+	"github.com/tneuqole/monkey-go/lexer"
 )
 
 func checkParserErrors(t *testing.T, p *Parser) {

@@ -1,8 +1,9 @@
 package evaluator
 
 import (
-	"object"
 	"testing"
+
+	"github.com/tneuqole/monkey-go/object"
 )
 
 func TestQuote(t *testing.T) {

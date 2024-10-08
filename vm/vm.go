@@ -1,10 +1,11 @@
 package vm
 
 import (
-	"code"
-	"compiler"
 	"fmt"
-	"object"
+
+	"github.com/tneuqole/monkey-go/code"
+	"github.com/tneuqole/monkey-go/compiler"
+	"github.com/tneuqole/monkey-go/object"
 )
 
 const StackSize = 2048

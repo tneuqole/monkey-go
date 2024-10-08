@@ -1,10 +1,11 @@
 package compiler
 
 import (
-	"ast"
-	"code"
 	"fmt"
-	"object"
+
+	"github.com/tneuqole/monkey-go/ast"
+	"github.com/tneuqole/monkey-go/code"
+	"github.com/tneuqole/monkey-go/object"
 )
 
 type EmittedInstruction struct {

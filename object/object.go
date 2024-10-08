@@ -1,11 +1,12 @@
 package object
 
 import (
-	"ast"
 	"bytes"
 	"fmt"
 	"hash/fnv"
 	"strings"
+
+	"github.com/tneuqole/monkey-go/ast"
 )
 
 type ObjectType string
