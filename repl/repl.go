@@ -6,6 +6,8 @@ import (
 	"io"
 
 	"github.com/tneuqole/monkey-go/compiler"
+	"github.com/tneuqole/monkey-go/object"
+
 	// "github.com/tneuqole/monkey-go/evaluator"
 	"github.com/tneuqole/monkey-go/lexer"
 	// "github.com/tneuqole/monkey-go/object"
@@ -30,8 +32,14 @@ const MONKEY_FACE = `            __,__
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+
 	// env := object.NewEnvironment()
 	// macroEnv := object.NewEnvironment()
+
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalsSize)
+	symbolTable := compiler.NewSymbolTable()
+
 	for {
 		fmt.Printf(PROMPT)
 		scanned := scanner.Scan()
@@ -57,13 +65,15 @@ func Start(in io.Reader, out io.Writer) {
 		// 	io.WriteString(out, evaluated.Inspect()+"\n")
 		// }
 
-		c := compiler.New()
+		c := compiler.NewWithState(symbolTable, constants)
 		err := c.Compile(program)
 		if err != nil {
 			fmt.Fprintf(out, "compilation failed: %s", err)
 		}
 
-		machine := vm.New(c.Bytecode())
+		bytecode := c.Bytecode()
+		constants = bytecode.Constants
+		machine := vm.NewWithGlobals(bytecode, globals)
 		err = machine.Run()
 		if err != nil {
 			fmt.Fprintf(out, "vm failed: %s", err)

@@ -8,7 +8,10 @@ import (
 	"github.com/tneuqole/monkey-go/object"
 )
 
-const StackSize = 2048
+const (
+	StackSize   = 2048
+	GlobalsSize = 65536
+)
 
 var (
 	True  = &object.Boolean{Value: true}
@@ -20,6 +23,7 @@ type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
 	stack        []object.Object
+	globals      []object.Object
 
 	// always points to next free space
 	// top of stack is stack[sp-1]
@@ -31,8 +35,15 @@ func New(bytecode *compiler.Bytecode) *VM {
 		instructions: bytecode.Instructions,
 		constants:    bytecode.Constants,
 		stack:        make([]object.Object, StackSize),
+		globals:      make([]object.Object, GlobalsSize),
 		sp:           0,
 	}
+}
+
+func NewWithGlobals(bytecode *compiler.Bytecode, globals []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = globals
+	return vm
 }
 
 func (vm *VM) StackTop() object.Object {
@@ -82,6 +93,14 @@ func (vm *VM) Run() error {
 			if !isTruthy(condition) {
 				ip = pos - 1
 			}
+		case code.OpSetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			vm.globals[globalIndex] = vm.pop()
+		case code.OpGetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			err = vm.push(vm.globals[globalIndex])
 		case code.OpNull:
 			err = vm.push(Null)
 		}

@@ -6,8 +6,8 @@ import (
 
 func TestDefine(t *testing.T) {
 	expected := map[string]Symbol{
-		"a": Symbol{Name: "a", Scope: GlobalScope, Index: 0},
-		"b": Symbol{Name: "b", Scope: GlobalScope, Index: 1},
+		"a": {Name: "a", Scope: GlobalScope, Index: 0},
+		"b": {Name: "b", Scope: GlobalScope, Index: 1},
 	}
 	global := NewSymbolTable()
 	a := global.Define("a")
