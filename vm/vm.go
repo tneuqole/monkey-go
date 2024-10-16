@@ -125,6 +125,10 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpIndex:
+			index := vm.pop()
+			left := vm.pop()
+			err = vm.executeIndexExpression(left, index)
 		case code.OpNull:
 			err = vm.push(Null)
 		}
@@ -267,6 +271,40 @@ func (vm *VM) executeIntegerComparison(op code.Opcode, left, right object.Object
 	default:
 		return fmt.Errorf("unknown integer operater: %d", op)
 	}
+}
+
+func (vm *VM) executeIndexExpression(left, index object.Object) error {
+	switch {
+	case left.Type() == object.HASH_OBJ:
+		return vm.executeHashIndex(left, index)
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return vm.executeArrayIndex(left, index)
+	default:
+		return fmt.Errorf("object %T is not indexable for %T.", left, left)
+	}
+}
+
+func (vm *VM) executeArrayIndex(left, index object.Object) error {
+	arr := left.(*object.Array)
+	i := index.(*object.Integer).Value
+	if i < 0 || i > int64(len(arr.Elements)-1) {
+		return vm.push(Null)
+	}
+	return vm.push(arr.Elements[i])
+}
+
+func (vm *VM) executeHashIndex(left, index object.Object) error {
+	hash := left.(*object.Hash)
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return fmt.Errorf("index not hashable: %s", index)
+	}
+
+	pair, ok := hash.Pairs[key.HashKey()]
+	if !ok {
+		return vm.push(Null)
+	}
+	return vm.push(pair.Value)
 }
 
 func (vm *VM) buildArray(start, end int) object.Object {
