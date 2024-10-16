@@ -101,6 +101,30 @@ func (vm *VM) Run() error {
 			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
 			ip += 2
 			err = vm.push(vm.globals[globalIndex])
+		case code.OpArray:
+			numElements := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			arr := vm.buildArray(vm.sp-numElements, vm.sp)
+			vm.sp = vm.sp - numElements
+			err := vm.push(arr)
+			if err != nil {
+				return err
+			}
+		case code.OpHash:
+			numElements := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			hash, err := vm.buildHash(vm.sp-numElements, vm.sp)
+			if err != nil {
+				return err
+			}
+
+			vm.sp = vm.sp - numElements
+			err = vm.push(hash)
+			if err != nil {
+				return err
+			}
 		case code.OpNull:
 			err = vm.push(Null)
 		}
@@ -243,6 +267,31 @@ func (vm *VM) executeIntegerComparison(op code.Opcode, left, right object.Object
 	default:
 		return fmt.Errorf("unknown integer operater: %d", op)
 	}
+}
+
+func (vm *VM) buildArray(start, end int) object.Object {
+	elements := make([]object.Object, end-start)
+	for i := start; i < end; i++ {
+		elements[i-start] = vm.stack[i]
+	}
+
+	return &object.Array{Elements: elements}
+}
+
+func (vm *VM) buildHash(start, end int) (object.Object, error) {
+	pairs := make(map[object.HashKey]object.HashPair, end-start)
+	for i := start; i < end; i += 2 {
+		k := vm.stack[i]
+		v := vm.stack[i+1]
+
+		hashKey, ok := k.(object.Hashable)
+		if !ok {
+			return nil, fmt.Errorf("object is not hashable %s", k)
+		}
+		pairs[hashKey.HashKey()] = object.HashPair{Key: k, Value: v}
+	}
+
+	return &object.Hash{Pairs: pairs}, nil
 }
 
 func nativeBoolToBooleanObject(b bool) *object.Boolean {
