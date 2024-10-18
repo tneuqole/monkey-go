@@ -150,6 +150,9 @@ func (vm *VM) Run() error {
 			val := vm.pop()
 			vm.popFrame()
 			err = vm.push(val)
+		case code.OpReturn:
+			vm.popFrame()
+			err = vm.push(Null)
 		case code.OpNull:
 			err = vm.push(Null)
 		}
