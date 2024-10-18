@@ -122,10 +122,7 @@ func (vm *VM) Run() error {
 
 			arr := vm.buildArray(vm.sp-numElements, vm.sp)
 			vm.sp = vm.sp - numElements
-			err := vm.push(arr)
-			if err != nil {
-				return err
-			}
+			err = vm.push(arr)
 		case code.OpHash:
 			numElements := int(code.ReadUint16(ins[ip+1:]))
 			vm.currentFrame().ip += 2
@@ -137,13 +134,22 @@ func (vm *VM) Run() error {
 
 			vm.sp = vm.sp - numElements
 			err = vm.push(hash)
-			if err != nil {
-				return err
-			}
 		case code.OpIndex:
 			index := vm.pop()
 			left := vm.pop()
 			err = vm.executeIndexExpression(left, index)
+		case code.OpCall:
+			fn, ok := vm.pop().(*object.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("not callable: %T (%+v)", fn, fn)
+			}
+
+			f := NewFrame(fn)
+			vm.pushFrame(f)
+		case code.OpReturnValue:
+			val := vm.pop()
+			vm.popFrame()
+			err = vm.push(val)
 		case code.OpNull:
 			err = vm.push(Null)
 		}
