@@ -344,6 +344,14 @@ func TestCallingFunctionsWithoutArguments(t *testing.T) {
 				`,
 			expected: Null,
 		},
+		{
+			input: `
+				let returnsOne = fn() { 1; };
+				let returnsOneReturner = fn() { returnsOne; };
+				returnsOneReturner()();
+				`,
+			expected: 1,
+		},
 	}
 	runVmTests(t, tests)
 }
