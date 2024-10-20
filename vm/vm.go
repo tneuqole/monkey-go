@@ -149,6 +149,7 @@ func (vm *VM) Run() error {
 			left := vm.pop()
 			err = vm.executeIndexExpression(left, index)
 		case code.OpCall:
+			vm.currentFrame().ip += 1
 			// this doesn't work for nested function calls?
 			// fn, ok := vm.pop().(*object.CompiledFunction)
 			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
