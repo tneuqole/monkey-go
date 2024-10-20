@@ -34,7 +34,7 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	fn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	f := NewFrame(fn)
+	f := NewFrame(fn, 0)
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = f
 
@@ -116,6 +116,16 @@ func (vm *VM) Run() error {
 			globalIndex := code.ReadUint16(ins[ip+1:])
 			vm.currentFrame().ip += 2
 			err = vm.push(vm.globals[globalIndex])
+		case code.OpSetLocal:
+			localIndex := code.ReadUint8(ins[ip+1:])
+			f := vm.currentFrame()
+			f.ip += 1
+			vm.stack[f.basePointer+int(localIndex)] = vm.pop()
+		case code.OpGetLocal:
+			localIndex := code.ReadUint8(ins[ip+1:])
+			f := vm.currentFrame()
+			f.ip += 1
+			err = vm.push(vm.stack[f.basePointer+int(localIndex)])
 		case code.OpArray:
 			numElements := int(code.ReadUint16(ins[ip+1:]))
 			vm.currentFrame().ip += 2
@@ -139,19 +149,26 @@ func (vm *VM) Run() error {
 			left := vm.pop()
 			err = vm.executeIndexExpression(left, index)
 		case code.OpCall:
-			fn, ok := vm.pop().(*object.CompiledFunction)
+			// this doesn't work for nested function calls?
+			// fn, ok := vm.pop().(*object.CompiledFunction)
+			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
 			if !ok {
 				return fmt.Errorf("not callable: %T (%+v)", fn, fn)
 			}
 
-			f := NewFrame(fn)
+			f := NewFrame(fn, vm.sp)
 			vm.pushFrame(f)
+			vm.sp += fn.NumLocals
 		case code.OpReturnValue:
 			val := vm.pop()
-			vm.popFrame()
+			f := vm.popFrame()
+			vm.pop()
+			vm.sp = f.basePointer - 1
 			err = vm.push(val)
 		case code.OpReturn:
-			vm.popFrame()
+			f := vm.popFrame()
+			vm.pop()
+			vm.sp = f.basePointer - 1
 			err = vm.push(Null)
 		case code.OpNull:
 			err = vm.push(Null)
