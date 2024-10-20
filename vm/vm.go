@@ -149,17 +149,9 @@ func (vm *VM) Run() error {
 			left := vm.pop()
 			err = vm.executeIndexExpression(left, index)
 		case code.OpCall:
+			numArgs := int(code.ReadUint8(ins[ip+1:]))
 			vm.currentFrame().ip += 1
-			// this doesn't work for nested function calls?
-			// fn, ok := vm.pop().(*object.CompiledFunction)
-			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
-			if !ok {
-				return fmt.Errorf("not callable: %T (%+v)", fn, fn)
-			}
-
-			f := NewFrame(fn, vm.sp)
-			vm.pushFrame(f)
-			vm.sp += fn.NumLocals
+			err = vm.callFunction(numArgs)
 		case code.OpReturnValue:
 			val := vm.pop()
 			f := vm.popFrame()
@@ -200,6 +192,25 @@ func (vm *VM) pop() object.Object {
 	vm.sp--
 
 	return obj
+}
+
+func (vm *VM) callFunction(numArgs int) error {
+	// this doesn't work for nested function calls?
+	// fn, ok := vm.pop().(*object.CompiledFunction)
+	fn, ok := vm.stack[vm.sp-numArgs-1].(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("not callable: %T (%+v)", fn, fn)
+	}
+
+	if numArgs != fn.NumParameters {
+		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", fn.NumParameters, numArgs)
+	}
+
+	f := NewFrame(fn, vm.sp-numArgs)
+	vm.pushFrame(f)
+	vm.sp += fn.NumLocals + numArgs
+
+	return nil
 }
 
 func (vm *VM) executeBangOperator() error {
