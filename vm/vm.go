@@ -151,7 +151,7 @@ func (vm *VM) Run() error {
 		case code.OpCall:
 			numArgs := int(code.ReadUint8(ins[ip+1:]))
 			vm.currentFrame().ip += 1
-			err = vm.callFunction(numArgs)
+			err = vm.executeCall(numArgs)
 		case code.OpReturnValue:
 			val := vm.pop()
 			f := vm.popFrame()
@@ -163,6 +163,12 @@ func (vm *VM) Run() error {
 			vm.pop()
 			vm.sp = f.basePointer - 1
 			err = vm.push(Null)
+		case code.OpGetBuiltin:
+			builtinIndex := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
+
+			fn := object.Builtins[builtinIndex]
+			err = vm.push(fn.Builtin)
 		case code.OpNull:
 			err = vm.push(Null)
 		}
@@ -194,14 +200,20 @@ func (vm *VM) pop() object.Object {
 	return obj
 }
 
-func (vm *VM) callFunction(numArgs int) error {
-	// this doesn't work for nested function calls?
-	// fn, ok := vm.pop().(*object.CompiledFunction)
-	fn, ok := vm.stack[vm.sp-numArgs-1].(*object.CompiledFunction)
-	if !ok {
-		return fmt.Errorf("not callable: %T (%+v)", fn, fn)
-	}
+func (vm *VM) executeCall(numArgs int) error {
+	callee := vm.stack[vm.sp-numArgs-1]
+	switch callee := callee.(type) {
+	case *object.CompiledFunction:
+		return vm.callFunction(callee, numArgs)
+	case *object.Builtin:
+		return vm.callBuiltin(callee, numArgs)
+	default:
+		return fmt.Errorf("not callable: %T (%+v)", callee, callee)
 
+	}
+}
+
+func (vm *VM) callFunction(fn *object.CompiledFunction, numArgs int) error {
 	if numArgs != fn.NumParameters {
 		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", fn.NumParameters, numArgs)
 	}
@@ -210,6 +222,19 @@ func (vm *VM) callFunction(numArgs int) error {
 	vm.pushFrame(f)
 	vm.sp += fn.NumLocals + numArgs
 
+	return nil
+}
+
+func (vm *VM) callBuiltin(builtin *object.Builtin, numArgs int) error {
+	args := vm.stack[vm.sp-numArgs : vm.sp]
+	result := builtin.Fn(args...)
+	vm.sp -= numArgs + 1
+
+	if result != nil {
+		vm.push(result)
+	} else {
+		vm.push(Null)
+	}
 	return nil
 }
 
