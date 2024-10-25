@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"github.com/tneuqole/monkey-go/token"
@@ -33,6 +34,7 @@ func (p *Program) TokenLiteral() string {
 		return ""
 	}
 }
+
 func (p *Program) String() string {
 	var out bytes.Buffer
 	for _, s := range p.Statements {
@@ -93,7 +95,6 @@ func (rs *ReturnStatement) String() string {
 
 	out.WriteString(";")
 	return out.String()
-
 }
 
 type ExpressionStatement struct {
@@ -215,6 +216,7 @@ type FunctionLiteral struct {
 	Token      token.Token
 	Parameters []*Identifier
 	Body       *BlockStatement
+	Name       string
 }
 
 func (fl *FunctionLiteral) expressionNode()      {}
@@ -228,6 +230,7 @@ func (fl *FunctionLiteral) String() string {
 	}
 
 	out.WriteString(fl.TokenLiteral())
+	out.WriteString(fmt.Sprintf("<%s>", fl.Name))
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(")")

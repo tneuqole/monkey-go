@@ -66,6 +66,7 @@ func testIntegerLiteral(t *testing.T, exp ast.Expression, val int64) bool {
 
 	return true
 }
+
 func testBoolean(t *testing.T, exp ast.Expression, val bool) bool {
 	b, ok := exp.(*ast.Boolean)
 	if !ok {
@@ -322,7 +323,6 @@ func TestParsingInfixExpressions(t *testing.T) {
 
 		testInfixExpression(t, stmt.Expression, tt.leftValue, tt.operator, tt.rightValue)
 	}
-
 }
 
 func TestOperatorPrecedenceParsing(t *testing.T) {
@@ -428,7 +428,6 @@ func TestIfExpression(t *testing.T) {
 	if exp.Alternative != nil {
 		t.Errorf("Alternative not nil, got=%+v", exp.Alternative)
 	}
-
 }
 
 func TestIfElseExpression(t *testing.T) {
@@ -476,7 +475,6 @@ func TestIfElseExpression(t *testing.T) {
 	}
 
 	testIdentifier(t, alternative.Expression, "y")
-
 }
 
 func TestFunctionLiteral(t *testing.T) {
@@ -843,6 +841,7 @@ func TestParsingHashLiteralsBoolKeys(t *testing.T) {
 		}
 	}
 }
+
 func TestParsingEmptyHashLiteral(t *testing.T) {
 	input := "{}"
 	l := lexer.New(input)
@@ -859,7 +858,6 @@ func TestParsingEmptyHashLiteral(t *testing.T) {
 	if len(hash.Pairs) != 0 {
 		t.Errorf("hash.Pairs wrong length, got=%d", len(hash.Pairs))
 	}
-
 }
 
 func TestMacroLiteralParsing(t *testing.T) {
@@ -901,4 +899,30 @@ func TestMacroLiteralParsing(t *testing.T) {
 	}
 
 	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
+}
+
+func TestFunctionLiteralWithName(t *testing.T) {
+	input := `let myFunction = fn() { };`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Body does not contain %d statements. got=%d\n",
+			1, len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.LetStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.LetStatement. got=%T",
+			program.Statements[0])
+	}
+	function, ok := stmt.Value.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("stmt.Value is not ast.FunctionLiteral. got=%T",
+			stmt.Value)
+	}
+	if function.Name != "myFunction" {
+		t.Fatalf("function literal name wrong. want 'myFunction', got=%q\n",
+			function.Name)
+	}
 }

@@ -181,6 +181,9 @@ func (vm *VM) Run() error {
 			vm.currentFrame().ip += 1
 			cl := vm.currentFrame().cl
 			err = vm.push(cl.Free[freeIndex])
+		case code.OpCurrentClosure:
+			cl := vm.currentFrame().cl
+			err = vm.push(cl)
 		case code.OpNull:
 			err = vm.push(Null)
 		}
