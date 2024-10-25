@@ -33,8 +33,10 @@ type VM struct {
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
-	fn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	f := NewFrame(fn, 0)
+	cl := &object.Closure{
+		Fn: &object.CompiledFunction{Instructions: bytecode.Instructions},
+	}
+	f := NewFrame(cl, 0)
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = f
 
@@ -169,6 +171,12 @@ func (vm *VM) Run() error {
 
 			fn := object.Builtins[builtinIndex]
 			err = vm.push(fn.Builtin)
+		case code.OpClosure:
+			constIndex := int(code.ReadUint16(ins[ip+1:]))
+			_ = code.ReadUint8(ins[ip+3:])
+			vm.currentFrame().ip += 3
+
+			err = vm.pushClosure(constIndex)
 		case code.OpNull:
 			err = vm.push(Null)
 		}
@@ -200,11 +208,21 @@ func (vm *VM) pop() object.Object {
 	return obj
 }
 
+func (vm *VM) pushClosure(constIndex int) error {
+	c := vm.constants[constIndex]
+	fn, ok := c.(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("not a function: %+v", c)
+	}
+
+	return vm.push(&object.Closure{Fn: fn})
+}
+
 func (vm *VM) executeCall(numArgs int) error {
 	callee := vm.stack[vm.sp-numArgs-1]
 	switch callee := callee.(type) {
-	case *object.CompiledFunction:
-		return vm.callFunction(callee, numArgs)
+	case *object.Closure:
+		return vm.callClosure(callee, numArgs)
 	case *object.Builtin:
 		return vm.callBuiltin(callee, numArgs)
 	default:
@@ -213,14 +231,14 @@ func (vm *VM) executeCall(numArgs int) error {
 	}
 }
 
-func (vm *VM) callFunction(fn *object.CompiledFunction, numArgs int) error {
-	if numArgs != fn.NumParameters {
-		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", fn.NumParameters, numArgs)
+func (vm *VM) callClosure(cl *object.Closure, numArgs int) error {
+	if numArgs != cl.Fn.NumParameters {
+		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", cl.Fn.NumParameters, numArgs)
 	}
 
-	f := NewFrame(fn, vm.sp-numArgs)
+	f := NewFrame(cl, vm.sp-numArgs)
 	vm.pushFrame(f)
-	vm.sp += fn.NumLocals + numArgs
+	vm.sp += cl.Fn.NumLocals + numArgs
 
 	return nil
 }
