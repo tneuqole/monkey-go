@@ -35,6 +35,7 @@ const (
 	OpReturn
 	OpGetBuiltin
 	OpClosure
+	OpGetFree
 )
 
 type Opcode byte
@@ -73,6 +74,7 @@ var definitions = map[Opcode]*Definition{
 	OpReturn:        {"OpReturn", []int{}},
 	OpGetBuiltin:    {"OpGetBuiltin", []int{1}},
 	OpClosure:       {"OpClosure", []int{2, 1}},
+	OpGetFree:       {"OpGetFree", []int{1}},
 }
 
 type Instructions []byte
